@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <script src="http://cdn.bootcss.com/jquery/1.6.1/jquery.js"></script>
+</head>
+<style media="screen">
+    * {
+        margin: 0;
+        padding: 0
+    }
+
+    .content {
+        margin: 0 auto;
+        margin-top: 200px;
+    }
+
+    table {
+        margin: 0 auto;
+    }
+
+    th,
+    td ,input{
+        width: 400px;
+        text-align: center;
+    }
+    #addBtn{
+      margin: 50px auto;
+      text-align:center;border:1px solid black;
+      width: 400px;
+    }
+    .modifySure,#addTab{
+      display: none;
+    }
+    #addTab{
+
+    }
+    #serchCon{
+      margin-left: 40%;
+      margin-bottom: 100px;
+    }
+    #serchCon select{
+
+    }
+</style>
+
+<body>
+    <div class="content">
+        <div id="serchCon">
+          <input id="searchInp" type="text" name="" value="">
+          <select id="selectType" class="" name="">
+            <option value="">查询类型</option>
+            <option value="stuid">学号</option>
+            <option value="name">姓名</option>
+          </select>
+          <button id="search" type="button" >查询</button>
+        </div>
+        <table id="conTab" border="1">
+            <tr>
+                <th>学号</th>
+                <th>姓名</th>
+                <th>性别</th>
+                <th>爱好</th>
+                <th>操作</th>
+            </tr>
+
+        </table>
+        <h1 id="addBtn" >增加一行</h1>
+        <table border="1" id="addTab">
+            <tr>
+                <th>学号</th>
+                <th>姓名</th>
+                <th>性别</th>
+                <th>爱好</th>
+                <th>操作</th>
+            </tr>
+            <tr>
+                <td><input id="stuid" type="text" value=""></td>
+                <td><input id="name" type="text"  value=""></td>
+                <td><input id="gender" type="text"  value=""></td>
+                <td><input id="hobby" type="text"  value=""></td>
+                <td><a id="addItem" href="javascript:void(0)">确定</a></td>
+
+            </tr>
+
+        </table>
+
+
+    </div>
+
+
+</body>
+<script type="text/javascript">
+init();
+  function init(){
+    var modify=$(".modify"),
+        modifySure=$(".modifySure")
+        addBtn=$("#addBtn"),
+        addTab=$("#addTab"),
+        addItem=$("#addItem");
+        deleteItem=$(".delete");
+    modify.die().live("click",function(){
+      console.log($(this).parent().parent());
+      var $tr=$(this).parent().parent().parent();
+      $tr.find($(".doSome")).hide();
+      $tr.find(".modifySure").show();
+      $tr.find($("input")).each(function(a,b){$(b).attr("disabled",false)});
+      $($tr.find($("input"))[0]).attr("disabled",true);
+      $tr.find($("input"))[1].focus();
+
+    })
+    modifySure.die().live("click",function(){
+      var $mtr=$(this).parent().parent();
+      $(this).hide();
+      $mtr.find($(".doSome")).show();
+      $mtr.find($("input")).each(function(a,b){$(b).attr("disabled",true)});
+      var stuid=$($mtr.find($("input"))[0]).val();
+      var name=$($mtr.find($("input"))[1]).val();
+      var gender=$($mtr.find($("input"))[2]).val();
+      var hobby=$($mtr.find($("input"))[3]).val();
+      // console.log(stuid,name,gender,hobby);
+      modifyOneItem(stuid,name,gender,hobby)
+
+
+    })
+    //根据选择的类型查询
+    $("#search").unbind("click").click(function(){
+      var searchInp=$("#searchInp").val();
+      var selectType=$("#selectType").val()
+      console.log(searchInp,selectType);
+      //按照姓名查询
+      search(selectType,searchInp)
+    })
+    addBtn.click(function(){
+      addTab.show();
+    });
+    addItem.unbind("click").click(function(){
+        alert("ass")
+        addOneItem($("#stuid").val(),$("#name").val(),$("#gender").val(),$("#hobby").val());
+
+
+
+        // addTab.hide();
+
+    });
+    deleteItem.die().live('click',function(){
+
+      var $tr=$(this).parent().parent().parent();
+      var $stuid=$($tr.find($("input"))[0]).val();
+      console.log($stuid);
+      if (confirm("确定要删除吗？")) {
+        deleteByStuid($stuid);
+        $tr.remove();
+      }
+
+
+
+
+    })
+
+  }
+
+  //获取所有数据
+  function allData(){
+    $.get( "all.php",
+             {q:"all"},
+             function(data){
+               console.log(JSON.parse(data));
+               var data=JSON.parse(data);
+               var str="";
+               for (var i = 0; i < data.length; i++) {
+
+                 str+=`<tr>
+                     <td><input type="text" value="${data[i]['stuid']}" disabled=true></td>
+                     <td><input type="text" value="${data[i]['name']}" disabled></td>
+                     <td><input type="text" value="${data[i]['gender']}" disabled></td>
+                     <td><input type="text" value="${data[i]['hobby']}" disabled></td>
+                     <td><span class="doSome"><a class="modify" href="javascript:void(0)">修改</a>/<a class="delete" href="javascript:void(0)">删除</a></span>
+                       <a class="modifySure" href="javascript:void(0)">确认修改</a>
+                     </td>
+                 </tr>`;
+               }
+               $("#conTab").append(str);
+               init();
+
+             }
+          );
+  }
+  allData()
+  //增加一条学生数据
+  function addOneItem(stuid,name,gender,hobby){
+    $.get("insert.php",{stuid:stuid,name:name,gender:gender,hobby:hobby},
+          function(data){
+            console.log(data);
+            if (data=="数据保存成功") {
+              alert("数据保存成功");
+              //此时将数据虚假的添加到conTab中
+              var str=`<tr>
+                  <td><input type="text" value="${stuid}" disabled=true></td>
+                  <td><input type="text" value="${name}" disabled></td>
+                  <td><input type="text" value="${gender}" disabled></td>
+                  <td><input type="text" value="${hobby}" disabled></td>
+                  <td><span class="doSome"><a class="modify" href="javascript:void(0)">修改</a>/<a class="delete" href="javascript:void(0)">删除</a></span>
+                    <a class="modifySure" href="javascript:void(0)">确认修改</a>
+                  </td>
+              </tr>`;
+               $("#conTab").append(str);
+               init()
+              return;
+            } else {
+                alert("数据保存失败");
+                return;
+            }
+            }
+  )
+
+  }
+//修改一条数据
+function modifyOneItem(stuid,name,gender,hobby){
+  $.get("update.php",{stuid:stuid,name:name,gender:gender,hobby:hobby},
+        function(data){
+          console.log(data);
+          if(data=="修改成功"){
+            alert("修改成功！");
+            return;
+          }
+        }
+  )
+
+}
+//根据stuid删除一条数据
+function deleteByStuid(stuid){
+  $.get("delete.php",{stuid:stuid},
+        function(data){
+          console.log(data);
+          if(data=="删除成功"){
+            alert("删除成功");
+            return;
+          }else{
+            alert("删除失败");
+            return;
+          }
+        }
+  )
+
+}
+//查询数据
+function search(type,param){
+  $.get("search.php",{type:type,param:param},function(data){
+      console.log(data);
+
+
+      if(data=="未查询到结果"){
+        $("#conTab").empty().text(data);
+        return;
+      }
+      var data=JSON.parse(data);
+      var str="";
+      for (var i = 0; i < data.length; i++) {
+
+        str+=`<tr>
+            <td><input type="text" value="${data[i]['stuid']}" disabled=true></td>
+            <td><input type="text" value="${data[i]['name']}" disabled></td>
+            <td><input type="text" value="${data[i]['gender']}" disabled></td>
+            <td><input type="text" value="${data[i]['hobby']}" disabled></td>
+            <td><span class="doSome"><a class="modify" href="javascript:void(0)">修改</a>/<a class="delete" href="javascript:void(0)">删除</a></span>
+              <a class="modifySure" href="javascript:void(0)">确认修改</a>
+            </td>
+        </tr>`;
+      }
+
+      if (data[0]['stuid']) {
+
+        $("#conTab").empty();
+        $("#conTab").append(str)
+        init();
+      }else {
+        $("#conTab").empty().text(data);
+      }
+
+  })
+}
+
+</script>
+
+</html>
